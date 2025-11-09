@@ -30,6 +30,7 @@ const orderRoutes = require('./routes/orderRoutes');
 const contactRoutes = require('./routes/contactRoutes');
 const serviceRoutes = require('./routes/serviceRoutes');
 const userRoutes = require('./routes/userRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
 
 // Validate required environment variables
 const requiredEnvVars = [
@@ -116,6 +117,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/payment', paymentRoutes);
 
 // Serve static files from frontend images directory
 const imagesPath = path.resolve(path.join(__dirname, '..', 'frontend', 'public', 'images'));
