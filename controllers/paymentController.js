@@ -7,6 +7,14 @@ exports.initializePayment = async (req, res) => {
   try {
     const { email, amount, orderId, metadata } = req.body;
 
+    // Check if Paystack is configured
+    if (!process.env.PAYSTACK_SECRET_KEY || process.env.PAYSTACK_SECRET_KEY === 'your-paystack-secret-key-here') {
+      return res.status(500).json({
+        success: false,
+        message: 'Paystack payment gateway is not configured. Please contact support.'
+      });
+    }
+
     // Validate required fields
     if (!email || !amount) {
       return res.status(400).json({
@@ -244,6 +252,21 @@ exports.initializeRemitaPayment = async (req, res) => {
   try {
     const { email, amount, orderId, customerName, customerPhone } = req.body;
 
+    const merchantId = process.env.REMITA_MERCHANT_ID;
+    const apiKey = process.env.REMITA_API_KEY;
+    const serviceTypeId = process.env.REMITA_SERVICE_TYPE_ID;
+
+    // Check if Remita is configured
+    if (!merchantId || !apiKey || !serviceTypeId ||
+        merchantId === 'your-remita-merchant-id-here' ||
+        apiKey === 'your-remita-api-key-here' ||
+        serviceTypeId === 'your-remita-service-type-id-here') {
+      return res.status(500).json({
+        success: false,
+        message: 'Remita payment gateway is not configured. Please contact support.'
+      });
+    }
+
     // Validate required fields
     if (!email || !amount || !customerName) {
       return res.status(400).json({
@@ -251,10 +274,6 @@ exports.initializeRemitaPayment = async (req, res) => {
         message: 'Email, amount, and customer name are required'
       });
     }
-
-    const merchantId = process.env.REMITA_MERCHANT_ID;
-    const apiKey = process.env.REMITA_API_KEY;
-    const serviceTypeId = process.env.REMITA_SERVICE_TYPE_ID;
 
     // Generate unique RRR (Remita Retrieval Reference)
     const rrr = `RMT${Date.now()}${Math.floor(Math.random() * 1000)}`;
