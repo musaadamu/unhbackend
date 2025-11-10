@@ -160,6 +160,24 @@ exports.updateProduct = async (req, res) => {
         console.log('📝 Update data:', JSON.stringify(req.body, null, 2));
         console.log('📝 User:', req.user?.email, 'Role:', req.user?.role);
 
+        // Defensive normalization: some older records (or clients) may store
+        // product.images as an array of strings (filenames). Ensure the
+        // payload uses objects with a `url` field to satisfy the schema's
+        // validators when using `runValidators: true` on update.
+        if (req.body.images && Array.isArray(req.body.images)) {
+            req.body.images = req.body.images.map(img =>
+                typeof img === 'string' ? { url: img, alt: req.body.name || '', isPrimary: false } : img
+            );
+        }
+
+        // If `sku` is present but an empty string (""), remove it from the
+        // update payload. An empty string counts as a value for a unique
+        // index and can cause duplicate-key errors if multiple docs have
+        // empty sku. Removing it lets the sparse index ignore the field.
+        if ('sku' in req.body && (req.body.sku === '' || req.body.sku == null)) {
+            delete req.body.sku;
+        }
+
         const product = await Product.findByIdAndUpdate(
             req.params.id,
             req.body,
