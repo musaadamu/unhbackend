@@ -156,6 +156,10 @@ exports.createProduct = async (req, res) => {
 // @access  Private/Admin
 exports.updateProduct = async (req, res) => {
     try {
+        console.log('📝 Updating product:', req.params.id);
+        console.log('📝 Update data:', JSON.stringify(req.body, null, 2));
+        console.log('📝 User:', req.user?.email, 'Role:', req.user?.role);
+
         const product = await Product.findByIdAndUpdate(
             req.params.id,
             req.body,
@@ -163,18 +167,21 @@ exports.updateProduct = async (req, res) => {
         );
 
         if (!product) {
+            console.log('❌ Product not found:', req.params.id);
             return res.status(404).json({
                 success: false,
                 message: 'Product not found'
             });
         }
 
+        console.log('✅ Product updated successfully:', product.name);
         res.status(200).json({
             success: true,
             message: 'Product updated successfully',
             product
         });
     } catch (error) {
+        console.error('❌ Error updating product:', error);
         res.status(500).json({
             success: false,
             message: 'Error updating product',
