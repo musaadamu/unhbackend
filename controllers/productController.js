@@ -135,6 +135,29 @@ exports.getProduct = async (req, res) => {
 // @access  Private/Admin
 exports.createProduct = async (req, res) => {
     try {
+        // Normalize images if provided as strings
+        if (req.body.images && Array.isArray(req.body.images)) {
+            req.body.images = req.body.images.map(img =>
+                typeof img === 'string' ? { url: img, alt: req.body.name || '', isPrimary: false } : img
+            );
+        }
+
+        // Normalize specifications: accept object {key: value} or array
+        if (req.body.specifications && !Array.isArray(req.body.specifications)) {
+            // If it's an object, convert to array of {name, value}
+            if (typeof req.body.specifications === 'object') {
+                req.body.specifications = Object.entries(req.body.specifications).map(([name, value]) => ({ name, value }));
+            } else {
+                // Otherwise, ensure it's an empty array
+                req.body.specifications = [];
+            }
+        }
+
+        // Remove empty SKU to avoid duplicate-key issues
+        if ('sku' in req.body && (req.body.sku === '' || req.body.sku == null)) {
+            delete req.body.sku;
+        }
+
         const product = await Product.create(req.body);
 
         res.status(201).json({
@@ -143,6 +166,16 @@ exports.createProduct = async (req, res) => {
             product
         });
     } catch (error) {
+        // Handle duplicate key (unique index) errors more clearly
+        if (error.code === 11000) {
+            const field = Object.keys(error.keyPattern || {}).join(', ');
+            return res.status(400).json({
+                success: false,
+                message: `Duplicate value for unique field(s): ${field}`,
+                error: error.message
+            });
+        }
+
         res.status(500).json({
             success: false,
             message: 'Error creating product',
@@ -168,6 +201,15 @@ exports.updateProduct = async (req, res) => {
             req.body.images = req.body.images.map(img =>
                 typeof img === 'string' ? { url: img, alt: req.body.name || '', isPrimary: false } : img
             );
+        }
+
+        // Normalize specifications (accept object or array)
+        if (req.body.specifications && !Array.isArray(req.body.specifications)) {
+            if (typeof req.body.specifications === 'object') {
+                req.body.specifications = Object.entries(req.body.specifications).map(([name, value]) => ({ name, value }));
+            } else {
+                req.body.specifications = [];
+            }
         }
 
         // If `sku` is present but an empty string (""), remove it from the
@@ -200,6 +242,16 @@ exports.updateProduct = async (req, res) => {
         });
     } catch (error) {
         console.error('❌ Error updating product:', error);
+        // Handle duplicate key errors explicitly
+        if (error.code === 11000) {
+            const field = Object.keys(error.keyPattern || {}).join(', ');
+            return res.status(400).json({
+                success: false,
+                message: `Duplicate value for unique field(s): ${field}`,
+                error: error.message
+            });
+        }
+
         res.status(500).json({
             success: false,
             message: 'Error updating product',
